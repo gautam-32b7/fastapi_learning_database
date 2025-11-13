@@ -4,6 +4,7 @@ from starlette import status
 from passlib.context import CryptContext
 from typing import Annotated
 from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordRequestForm
 
 from database import session_local
 from models import Users
@@ -35,6 +36,17 @@ class CreateUserRequest(BaseModel):
     role: str
 
 
+# Authenticate a user by verifying the provided username and password
+def authenticate_user(username: str, password: str, session):
+    user = session.query(Users).filter(Users.username == username).first()
+    print(user)
+    if not user:
+        return False
+    if not bcrypt_context.verify(password, user.hashed_password):
+        return False
+    return True
+
+
 # Create a new user in the database
 @router.post('/auth', status_code=status.HTTP_201_CREATED)
 async def create_user(session: session_dep, create_user_request: CreateUserRequest):
@@ -49,3 +61,12 @@ async def create_user(session: session_dep, create_user_request: CreateUserReque
     )
     session.add(create_user_model)
     session.commit()
+
+
+# Handle user login and return a successful or failure response based on authentication
+@router.post('/token')
+async def login_for_access_token(session: session_dep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+    user = authenticate_user(form_data.username, form_data.password, session)
+    if not user:
+        return 'Failed'
+    return 'Successful'
