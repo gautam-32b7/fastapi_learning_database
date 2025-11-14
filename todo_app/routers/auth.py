@@ -69,7 +69,7 @@ def create_access_token(username: str, user_id: int, expires_delta: timedelta):
 
 
 # Decode and validate the JWT token to return the current authenticated user
-async def get_current_useer(token: Annotated[str, Depends(oauth2_bearer)]):
+async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
         username = payload.get('sub')
@@ -104,6 +104,7 @@ async def create_user(session: session_dep, create_user_request: CreateUserReque
 async def login_for_access_token(session: session_dep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     user = authenticate_user(form_data.username, form_data.password, session)
     if not user:
-        return 'Failed Authentication'
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid User')
     token = create_access_token(user.username, user.id, timedelta(minutes=20))
     return {'access_token': token, 'token_type': 'bearer'}

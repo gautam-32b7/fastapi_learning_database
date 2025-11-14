@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from database import session_local
 from models import Todos
+from .auth import get_current_user
 
 router = APIRouter()
 
@@ -21,6 +22,9 @@ def get_session():
 
 # Defines a dependency that provides a database session to routes
 session_dep = Annotated[Session, Depends(get_session)]
+
+# Defines a dependency that provides JWT authentication to routes
+user_dep = Annotated[dict, Depends(get_current_user)]
 
 
 # Pydantic model for validating todo item data in requests
@@ -48,8 +52,11 @@ async def read_todo(session: session_dep, todo_id: int = Path(gt=0)):
 
 # Create a new todo item in the database
 @router.post('/todo', status_code=status.HTTP_201_CREATED)
-async def create_todo(session: session_dep, todo_request: TodoRequest):
-    todo = Todos(**todo_request.model_dump())
+async def create_todo(user: user_dep, session: session_dep, todo_request: TodoRequest):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid User')
+    todo = Todos(**todo_request.model_dump(), owner_id=user.get('id'))
     session.add(todo)
     session.commit()
     session.refresh(todo)
