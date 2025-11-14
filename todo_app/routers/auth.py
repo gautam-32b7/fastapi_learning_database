@@ -5,12 +5,18 @@ from passlib.context import CryptContext
 from typing import Annotated
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
+from jose import jwt
+from datetime import timedelta, datetime, timezone
 
 from database import session_local
 from models import Users
 
 router = APIRouter()
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+
+# JWT secret key and algorithm
+SECRET_KEY = '99754e57-18a6-48ba-824a-dc630a3a91f9'
+ALGORITHM = 'HS256'
 
 
 # Provide a database session and ensures it's closed after use
@@ -36,6 +42,12 @@ class CreateUserRequest(BaseModel):
     role: str
 
 
+# Pydantic model for JWT token
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
 # Authenticate a user by verifying the provided username and password
 def authenticate_user(username: str, password: str, session):
     user = session.query(Users).filter(Users.username == username).first()
@@ -44,7 +56,15 @@ def authenticate_user(username: str, password: str, session):
         return False
     if not bcrypt_context.verify(password, user.hashed_password):
         return False
-    return True
+    return user
+
+
+# Generate a JWT access token with username, user ID and expiration
+def create_access_token(username: str, user_id: int, expires_delta: timedelta):
+    encode = {'sub': username, 'id': user_id}
+    expires = datetime.now(timezone.utc) + expires_delta
+    encode.update({'exp': expires})
+    return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 # Create a new user in the database
@@ -64,9 +84,10 @@ async def create_user(session: session_dep, create_user_request: CreateUserReque
 
 
 # Handle user login and return a successful or failure response based on authentication
-@router.post('/token')
+@router.post('/token', response_model=Token)
 async def login_for_access_token(session: session_dep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     user = authenticate_user(form_data.username, form_data.password, session)
     if not user:
-        return 'Failed'
-    return 'Successful'
+        return 'Failed Authentication'
+    token = create_access_token(user.username, user.id, timedelta(minutes=20))
+    return {'access_token': token, 'token_type': 'bearer'}
