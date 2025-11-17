@@ -37,8 +37,8 @@ class TodoRequest(BaseModel):
 
 # Retrieve all todo items from the database
 @router.get('/', status_code=status.HTTP_200_OK)
-async def read_all(session: session_dep):
-    return session.query(Todos).all()
+async def read_all(user: user_dep, session: session_dep):
+    return session.query(Todos).filter(Todos.owner_id == user.get('id')).all()
 
 
 # Retrieve a single todo item by its ID
