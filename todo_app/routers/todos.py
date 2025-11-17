@@ -43,8 +43,12 @@ async def read_all(user: user_dep, session: session_dep):
 
 # Retrieve a single todo item by its ID
 @router.get('/todo/{todo_id}', status_code=status.HTTP_200_OK)
-async def read_todo(session: session_dep, todo_id: int = Path(gt=0)):
-    todo = session.query(Todos).filter(Todos.id == todo_id).first()
+async def read_todo(user: user_dep, session: session_dep, todo_id: int = Path(gt=0)):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid User')
+    todo = session.query(Todos).filter(Todos.id == todo_id).filter(
+        Todos.owner_id == user.get('id')).first()
     if todo is not None:
         return todo
     raise HTTPException(status_code=404, detail='Todo not found')
