@@ -90,9 +90,16 @@ async def update_todo(user: user_dep, session: session_dep, todo_request: TodoRe
 
 # Delete a todo item by its ID
 @router.delete('/todo/{todo_id}', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_todo(session: session_dep, todo_id: int = Path(gt=0)):
-    todo = session.query(Todos).filter(Todos.id == todo_id).first()
+async def delete_todo(user: user_dep, session: session_dep, todo_id: int = Path(gt=0)):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid User')
+
+    todo = session.query(Todos).filter(Todos.id == todo_id).filter(
+        Todos.owner_id == user.get('id')).first()
+
     if todo is None:
         raise HTTPException(status_code=404, detail='Todo not found')
-    session.query(Todos).filter(Todos.id == todo_id).delete()
+
+    session.query(Todos).filter(Todos.id == todo_id).filter(Todos.owner_id == user.get('id')).delete()
     session.commit()
