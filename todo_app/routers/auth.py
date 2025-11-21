@@ -11,7 +11,10 @@ from datetime import timedelta, datetime, timezone
 from database import session_local
 from models import Users
 
-router = APIRouter()
+router = APIRouter(
+    prefix='/auth',
+    tags=['auth']
+)
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 # JWT secret key, algorithm and oauth2_bearer
@@ -85,7 +88,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
 
 
 # Create a new user in the database
-@router.post('/auth', status_code=status.HTTP_201_CREATED)
+@router.post('/', status_code=status.HTTP_201_CREATED)
 async def create_user(session: session_dep, create_user_request: CreateUserRequest):
     create_user_model = Users(
         email=create_user_request.email,

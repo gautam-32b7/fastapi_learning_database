@@ -101,5 +101,6 @@ async def delete_todo(user: user_dep, session: session_dep, todo_id: int = Path(
     if todo is None:
         raise HTTPException(status_code=404, detail='Todo not found')
 
-    session.query(Todos).filter(Todos.id == todo_id).filter(Todos.owner_id == user.get('id')).delete()
+    session.query(Todos).filter(Todos.id == todo_id).filter(
+        Todos.owner_id == user.get('id')).delete()
     session.commit()
