@@ -11,10 +11,7 @@ from datetime import timedelta, datetime, timezone
 from database import session_local
 from models import Users
 
-router = APIRouter(
-    prefix='/auth',
-    tags=['auth']
-)
+router = APIRouter()
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 # JWT secret key, algorithm and oauth2_bearer
@@ -44,6 +41,7 @@ class CreateUserRequest(BaseModel):
     last_name: str
     password: str
     role: str
+    phone_number: str
 
 
 # Pydantic model for JWT token
@@ -88,7 +86,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
 
 
 # Create a new user in the database
-@router.post('/', status_code=status.HTTP_201_CREATED)
+@router.post('/auth', status_code=status.HTTP_201_CREATED)
 async def create_user(session: session_dep, create_user_request: CreateUserRequest):
     create_user_model = Users(
         email=create_user_request.email,
@@ -97,7 +95,8 @@ async def create_user(session: session_dep, create_user_request: CreateUserReque
         last_name=create_user_request.last_name,
         role=create_user_request.role,
         hashed_password=bcrypt_context.hash(create_user_request.password),
-        is_active=True
+        is_active=True,
+        phone_number=create_user_request.phone_number
     )
     session.add(create_user_model)
     session.commit()

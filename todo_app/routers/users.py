@@ -47,7 +47,7 @@ async def get_user(user: user_dep, session: session_dep):
     return session.query(Users).filter(Users.id == user.get('id')).first()
 
 
-# Comment
+# Updates user's password and returns 204 No Content
 @router.put('/password-change', status_code=status.HTTP_204_NO_CONTENT)
 async def change_password(user: user_dep, session: session_dep, user_verification: UserVerification):
     if user is None:
@@ -58,5 +58,17 @@ async def change_password(user: user_dep, session: session_dep, user_verificatio
         raise HTTPException(status_code=401, detail='Error on password change')
     user_model.hashed_password = bcrypt_context.hash(
         user_verification.new_password)
+    session.add(user_model)
+    session.commit()
+
+
+# Updates user's phone number and returns 204 No Content
+@router.put('/phone-number/{phone_number}', status_code=status.HTTP_204_NO_CONTENT)
+async def change_phone_number(user: user_dep, session: session_dep, phone_number: str):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    user_model = session.query(Users).filter(
+        Users.id == user.get('id')).first()
+    user_model.phone_number = phone_number
     session.add(user_model)
     session.commit()
