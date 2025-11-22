@@ -49,9 +49,13 @@ class Student:
         self.years = years
 
 
-def test_student_initialization():
-    s = Student('John', 'Doe', 'Computer Science', 3)
-    assert s.first_name == 'John'
-    assert s.last_name == 'Doe'
-    assert s.major == 'Computer Science'
-    assert s.years == 3
+@pytest.fixture
+def default_student():
+    return Student('John', 'Doe', 'Computer Science', 3)
+
+
+def test_student_initialization(default_student):
+    assert default_student.first_name == 'John'
+    assert default_student.last_name == 'Doe'
+    assert default_student.major == 'Computer Science'
+    assert default_student.years == 3
