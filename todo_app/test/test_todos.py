@@ -1,11 +1,14 @@
 from fastapi.testclient import TestClient
 from fastapi import status
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
 
+import pytest
+
 from database import Base
 from routers.todos import get_session, get_current_user
+from models import Todos
 from main import app
 
 
@@ -34,7 +37,7 @@ def override_get_session():
 
 # override get_user_user
 def overrides_get_current_user():
-    return {'username': 'john_doe', id: 3, 'user_role': 'user'}
+    return {'username': 'john_doe', 'id': 3, 'user_role': 'user'}
 
 
 app.dependency_overrides[get_session] = override_get_session
@@ -43,7 +46,29 @@ app.dependency_overrides[get_current_user] = overrides_get_current_user
 client = TestClient(app)
 
 
-def test_read_all_authenticated():
+@pytest.fixture
+def test_todo():
+    todo = Todos(
+        title='Learn to code',
+        description='Lorem ipsum dolor',
+        priority=5,
+        complete=False,
+        owner_id=3
+    )
+
+    db = testing_session_local()
+    db.add(todo)
+    db.commit()
+
+    # Run this snippet after the test executed
+    yield todo
+    with engine.connect() as connection:
+        connection.execute(text('DELETE FROM todos;'))
+        connection.commit()
+
+
+def test_read_all_authenticated(test_todo):
     response = client.get('/')
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert response.json() == [
+        {'title': 'Learn to code', 'description': 'Lorem ipsum dolor', 'priority': 5, 'complete': False, 'owner_id': 3, 'id': 1}]
