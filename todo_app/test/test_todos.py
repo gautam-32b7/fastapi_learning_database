@@ -61,7 +61,7 @@ def test_todo():
     db.add(todo)
     db.commit()
 
-    # Run this snippet after the test executed
+    # After the test runs, delete all todos to reset the database
     yield todo
     with engine.connect() as connection:
         connection.execute(text('DELETE FROM todos;'))
@@ -89,3 +89,23 @@ def test_read_one_authenticated_not_found(test_todo):
     response = client.get('/todo/999')
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {'detail': 'Todo not found'}
+
+
+# Test: create a todo
+def test_create_todo(test_todo):
+    request_data = {
+        'title': 'New todo',
+        'description': 'Lorem ipsum dolor',
+        'priority': 5,
+        'complete': False
+    }
+
+    response = client.post('/todo', json=request_data)
+    assert response.status_code == status.HTTP_201_CREATED
+
+    db = testing_session_local()
+    model = db.query(Todos).filter(Todos.id == 2).first()
+    assert model.title == request_data.get('title')
+    assert model.description == request_data.get('description')
+    assert model.priority == request_data.get('priority')
+    assert model.complete == request_data.get('complete')
