@@ -109,3 +109,33 @@ def test_create_todo(test_todo):
     assert model.description == request_data.get('description')
     assert model.priority == request_data.get('priority')
     assert model.complete == request_data.get('complete')
+
+
+# Test: update an existing todo
+def test_update_todo(test_todo):
+    request_data = {
+        'title': 'Change the title of the todo already saved!',
+        'description': 'Lorem ipsum dolor',
+        'priority': 5,
+        'complete': False
+    }
+
+    response = client.put('todo/1', json=request_data)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    db = testing_session_local()
+    model = db.query(Todos).filter(Todos.id == 1).first()
+    assert model.title == request_data.get('title')
+
+
+# Test: updating a non-existing todo should return 404 Not Found
+def test_update_todo_not_found(test_todo):
+    request_data = {
+        'title': 'Change the title of the todo already saved!',
+        'description': 'Lorem ipsum dolor',
+        'priority': 5,
+        'complete': False
+    }
+
+    response = client.put('todo/999', json=request_data)
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {'detail': 'Todo not found'}
