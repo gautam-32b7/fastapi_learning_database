@@ -1,71 +1,16 @@
 from fastapi.testclient import TestClient
 from fastapi import status
-from sqlalchemy import create_engine, text
-from sqlalchemy.pool import StaticPool
-from sqlalchemy.orm import sessionmaker
 
-import pytest
-
-from database import Base
 from routers.todos import get_session, get_current_user
 from models import Todos
 from main import app
-
-
-SQLALCHEMY_DATABASE_URL = 'sqlite:///./test_db.db'
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={'check_same_thread': False},
-    poolclass=StaticPool
-)
-
-testing_session_local = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine)
-
-Base.metadata.create_all(bind=engine)
-
-
-# Override get_session
-def override_get_session():
-    session = testing_session_local()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-# override get_user_user
-def overrides_get_current_user():
-    return {'username': 'john_doe', 'id': 3, 'user_role': 'user'}
+from .utils import *
 
 
 app.dependency_overrides[get_session] = override_get_session
 app.dependency_overrides[get_current_user] = overrides_get_current_user
 
 client = TestClient(app)
-
-
-# Fixture: create a test todo before each test and clean the table afterward
-@pytest.fixture
-def test_todo():
-    todo = Todos(
-        title='Learn to code',
-        description='Lorem ipsum dolor',
-        priority=5,
-        complete=False,
-        owner_id=3
-    )
-
-    db = testing_session_local()
-    db.add(todo)
-    db.commit()
-
-    # After the test runs, delete all todos to reset the database
-    yield todo
-    with engine.connect() as connection:
-        connection.execute(text('DELETE FROM todos;'))
-        connection.commit()
 
 
 # Test: authenticated user should see all their todos
@@ -120,7 +65,7 @@ def test_update_todo(test_todo):
         'complete': False
     }
 
-    response = client.put('todo/1', json=request_data)
+    response = client.put('/todo/1', json=request_data)
     assert response.status_code == status.HTTP_204_NO_CONTENT
     db = testing_session_local()
     model = db.query(Todos).filter(Todos.id == 1).first()
@@ -136,7 +81,7 @@ def test_update_todo_not_found(test_todo):
         'complete': False
     }
 
-    response = client.put('todo/999', json=request_data)
+    response = client.put('/todo/999', json=request_data)
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {'detail': 'Todo not found'}
 
