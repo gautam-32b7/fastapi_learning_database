@@ -33,7 +33,7 @@ def override_get_session():
 
 # override get_user_user
 def overrides_get_current_user():
-    return {'username': 'john_doe', 'id': 3, 'user_role': 'user'}
+    return {'username': 'gautam_sarkar', 'id': 6, 'user_role': 'admin'}
 
 
 # Fixture: create a test todo before each test and clean the table afterward
@@ -44,7 +44,7 @@ def test_todo():
         description='Lorem ipsum dolor',
         priority=5,
         complete=False,
-        owner_id=3
+        owner_id=6
     )
 
     db = testing_session_local()

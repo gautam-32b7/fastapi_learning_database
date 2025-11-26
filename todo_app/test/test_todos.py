@@ -18,7 +18,7 @@ def test_read_all_authenticated(test_todo):
     response = client.get('/')
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == [
-        {'title': 'Learn to code', 'description': 'Lorem ipsum dolor', 'priority': 5, 'complete': False, 'owner_id': 3, 'id': 1}]
+        {'title': 'Learn to code', 'description': 'Lorem ipsum dolor', 'priority': 5, 'complete': False, 'owner_id': 6, 'id': 1}]
 
 
 # Test: authenticated user should be able to read a specific todo by ID
@@ -26,7 +26,7 @@ def test_read_one_authenticated(test_todo):
     response = client.get('/todo/1')
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {'title': 'Learn to code', 'description': 'Lorem ipsum dolor',
-                               'priority': 5, 'complete': False, 'owner_id': 3, 'id': 1}
+                               'priority': 5, 'complete': False, 'owner_id': 6, 'id': 1}
 
 
 # Test: reading a non-existing todo should return 404

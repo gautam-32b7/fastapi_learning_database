@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from database import session_local
 from models import Todos
-from .auth import get_current_user
+from .auth import get_current_user, get_session
 
 router = APIRouter(
     prefix='/admin',
